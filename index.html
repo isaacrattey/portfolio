@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="background-glow" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <div>
+        <h1>Isaac Rattey</h1>
+      </div>
+      <p class="subtitle"></p>
+    </header>
+
+    <main class="content" id="projects">
+      <section class="tabs-section" aria-label="Project categories">
+        <div class="tab-list" id="tab-list" role="tablist" aria-label="Project tabs"></div>
+        <div id="tab-panels"></div>
+      </section>
+    </main>
+
+    <div class="project-modal" id="project-modal" aria-hidden="true">
+      <div class="project-modal__backdrop" data-close-modal></div>
+      <section
+        class="project-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-modal-title"
+        tabindex="-1"
+      >
+        <button class="project-modal__close" type="button" data-close-modal aria-label="Close project viewer">
+          Close
+        </button>
+
+        <div class="project-modal__content">
+          <div class="project-modal__media">
+            <img id="project-modal-image" src="" alt="" />
+            <div class="project-modal__controls">
+              <button type="button" id="project-prev-image" aria-label="Previous image">Previous</button>
+              <p id="project-image-count" aria-live="polite"></p>
+              <button type="button" id="project-next-image" aria-label="Next image">Next</button>
+            </div>
+          </div>
+
+          <div class="project-modal__details">
+            <h2 id="project-modal-title"></h2>
+            <div id="project-modal-description"></div>
+            <a id="project-modal-cta" class="project-modal__cta" href="#" target="_blank" rel="noopener noreferrer" hidden>
+              Learn more
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
