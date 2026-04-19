@@ -55,9 +55,10 @@ function parseScalar(rawValue) {
 }
 
 function parseFrontmatter(markdown) {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  const normalizedMarkdown = String(markdown).replace(/\r\n?/g, "\n");
+  const match = normalizedMarkdown.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) {
-    return { meta: {}, body: markdown };
+    return { meta: {}, body: normalizedMarkdown };
   }
 
   const meta = {};
