@@ -17,8 +17,8 @@ images:
   - AnemoneVase.jpg
 ---
 
-### Overview
-I experimented with clay extrusion printing using a PotterBot to learn Rhino and Grasshopper. For most prints, I created custom Grasshopper programs that generated GCODE directly so I could control and optimize print quality.
+## Overview
+I experimented with clay extrusion printing using a PotterBot to learn **Rhino** and **Grasshopper**. For most prints, I created custom Grasshopper programs that generated GCODE directly so I could control and optimize print quality.
 
 I focused on understanding how extrusion settings, toolpath strategy, and geometry influence final results.
 
