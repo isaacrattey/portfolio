@@ -266,6 +266,51 @@ function isExternalHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || "").trim());
 }
 
+function getGithubPagesRepoContext() {
+  const hostname = window.location.hostname || "";
+  const pathname = window.location.pathname || "/";
+  if (!hostname.endsWith(".github.io")) {
+    return null;
+  }
+
+  const owner = hostname.split(".")[0];
+  const pathParts = pathname.split("/").filter(Boolean);
+  const repo = pathParts[0];
+  if (!owner || !repo) {
+    return null;
+  }
+
+  return { owner, repo };
+}
+
+function buildRawGithubUrl(owner, repo, branch, relativePath) {
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${encodeURI(relativePath)}`;
+}
+
+async function fetchProjectMarkdown(projectPath) {
+  const response = await fetch(asUrl(projectPath), { cache: "no-store" });
+  if (response.ok) {
+    return response.text();
+  }
+
+  const isMarkdown = /\.md$/i.test(projectPath);
+  const context = getGithubPagesRepoContext();
+  if (!isMarkdown || !context) {
+    throw new Error(`Failed to load ${projectPath} (${response.status})`);
+  }
+
+  const branches = ["main", "master", "gh-pages"];
+  for (let i = 0; i < branches.length; i += 1) {
+    const fallbackUrl = buildRawGithubUrl(context.owner, context.repo, branches[i], projectPath);
+    const fallbackResponse = await fetch(fallbackUrl, { cache: "no-store" });
+    if (fallbackResponse.ok) {
+      return fallbackResponse.text();
+    }
+  }
+
+  throw new Error(`Failed to load ${projectPath} from site and GitHub raw fallback`);
+}
+
 function activateTab(targetKey) {
   tabButtons.forEach((button) => {
     const isActive = button.dataset.tab === targetKey;
@@ -469,13 +514,13 @@ async function loadProjects() {
   const entries = Array.isArray(registry.projects) ? registry.projects : [];
   const projectResults = await Promise.all(
     entries.map(async (projectPath) => {
-      const projectResponse = await fetch(asUrl(projectPath), { cache: "no-store" });
-      if (!projectResponse.ok) {
+      let markdown = "";
+      try {
+        markdown = await fetchProjectMarkdown(projectPath);
+      } catch (error) {
         console.warn(`Skipping project: ${projectPath}`);
         return null;
       }
-
-      const markdown = await projectResponse.text();
       const { meta, body } = parseFrontmatter(markdown);
 
       if (!meta.title || !meta.category || typeof meta.order !== "number") {
