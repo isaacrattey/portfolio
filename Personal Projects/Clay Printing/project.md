@@ -1,9 +1,12 @@
 ---
 title: Clay Printing
-category: Personal Projects
+category: Personal
 order: 10
+featured: true
+featured_order: 5
 summary: Clay extrusion printing experiments with custom Grasshopper-generated GCODE, non-planar slicing, and geometry texture studies.
 images:
+  - AnemoneVase.jpg
   - TexturedVaseGrasshopperOverview.png
   - SpiralAttractor.png
   - CustomGcodeTexturedVase.png
@@ -14,11 +17,10 @@ images:
   - Kiln.jpg
   - GlazedPiece.jpg
   - WavyCup.jpg
-  - AnemoneVase.jpg
 ---
 
-## Overview
-I experimented with clay extrusion printing using a PotterBot to learn **Rhino** and **Grasshopper**. For most prints, I created custom Grasshopper programs that generated GCODE directly so I could control and optimize print quality.
+### Overview
+I experimented with clay extrusion printing using a PotterBot to learn Rhino and Grasshopper. For most prints, I created custom Grasshopper programs that generated GCODE directly so I could control and optimize print quality.
 
 I focused on understanding how extrusion settings, toolpath strategy, and geometry influence final results.
 

@@ -54,6 +54,16 @@ function parseScalar(rawValue) {
   return value;
 }
 
+function parseBooleanLike(value) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "true";
+}
+
 function parseFrontmatter(markdown) {
   const normalizedMarkdown = String(markdown).replace(/\r\n?/g, "\n");
   const match = normalizedMarkdown.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -346,12 +356,19 @@ function renderCard(project) {
     media.className = "project-media";
     media.setAttribute("aria-label", `${project.title} previews`);
 
-    project.images.slice(0, 4).forEach((image) => {
-      const img = document.createElement("img");
-      img.src = asUrl(image.path);
-      img.alt = image.alt || `${project.title} preview`;
-      media.appendChild(img);
-    });
+    const leadImage = project.images[0];
+    const img = document.createElement("img");
+    img.src = asUrl(leadImage.path);
+    img.alt = leadImage.alt || `${project.title} preview`;
+    media.appendChild(img);
+
+    if (project.images.length > 1) {
+      const count = document.createElement("span");
+      count.className = "project-media__count";
+      count.setAttribute("aria-hidden", "true");
+      count.textContent = `+${project.images.length - 1}`;
+      media.appendChild(count);
+    }
 
     card.appendChild(media);
   }
@@ -367,7 +384,7 @@ function renderCard(project) {
   return card;
 }
 
-function renderProjects(projects) {
+function renderProjects(projects, sectionDescriptions = {}, aboutContent = "") {
   tabList.innerHTML = "";
   tabPanelsRoot.innerHTML = "";
 
@@ -380,8 +397,21 @@ function renderProjects(projects) {
   });
 
   const categories = Array.from(grouped.keys());
+  const featuredProjects = projects
+    .filter((project) => project.featured)
+    .slice()
+    .sort((a, b) => {
+      const aFeaturedOrder = typeof a.featuredOrder === "number" ? a.featuredOrder : Number.POSITIVE_INFINITY;
+      const bFeaturedOrder = typeof b.featuredOrder === "number" ? b.featuredOrder : Number.POSITIVE_INFINITY;
+      if (aFeaturedOrder !== bFeaturedOrder) {
+        return aFeaturedOrder - bFeaturedOrder;
+      }
+      return a.order - b.order;
+    });
+  const allCategories = featuredProjects.length > 0 ? ["Featured", ...categories] : categories;
+  allCategories.push("About Me");
 
-  categories.forEach((category, index) => {
+  allCategories.forEach((category, index) => {
     const tabKey = toSlug(category) || `category-${index + 1}`;
 
     const tabButton = document.createElement("button");
@@ -409,16 +439,34 @@ function renderProjects(projects) {
     panel.setAttribute("role", "tabpanel");
     panel.setAttribute("aria-labelledby", tabButton.id);
 
+    const rawDescription = sectionDescriptions[category];
+    if (category !== "About Me" && typeof rawDescription === "string" && rawDescription.trim()) {
+      const description = document.createElement("p");
+      description.className = "tab-panel__description";
+      description.innerHTML = renderInlineMarkdown(rawDescription.trim());
+      panel.appendChild(description);
+    }
+
+    if (category === "About Me") {
+      const about = document.createElement("article");
+      about.className = "about-panel__content";
+      about.innerHTML = aboutContent.trim()
+        ? renderMarkdown(aboutContent)
+        : "<p>Add your About Me content in <code>projects/about.md</code>.</p>";
+      panel.appendChild(about);
+      tabPanelsRoot.appendChild(panel);
+      return;
+    }
+
     const grid = document.createElement("div");
     grid.className = "project-grid";
 
-    grouped
-      .get(category)
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .forEach((project) => {
-        grid.appendChild(renderCard(project));
-      });
+    const panelProjects =
+      category === "Featured" ? featuredProjects : grouped.get(category).slice().sort((a, b) => a.order - b.order);
+
+    panelProjects.forEach((project) => {
+      grid.appendChild(renderCard(project));
+    });
 
     panel.appendChild(grid);
     tabPanelsRoot.appendChild(panel);
@@ -442,6 +490,41 @@ function renderProjects(projects) {
       activateTab(nextButton.dataset.tab);
     });
   });
+}
+
+async function loadAboutContent() {
+  try {
+    const response = await fetch("projects/about.md", { cache: "no-store" });
+    if (!response.ok) {
+      return "";
+    }
+    return response.text();
+  } catch (error) {
+    return "";
+  }
+}
+
+async function loadSectionDescriptions() {
+  try {
+    const response = await fetch("projects/sections.json", { cache: "no-store" });
+    if (!response.ok) {
+      return {};
+    }
+
+    const payload = await response.json();
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return {};
+    }
+
+    const sections = payload.sections;
+    if (!sections || typeof sections !== "object" || Array.isArray(sections)) {
+      return {};
+    }
+
+    return sections;
+  } catch (error) {
+    return {};
+  }
 }
 
 function renderModalImage() {
@@ -541,6 +624,8 @@ async function loadProjects() {
         title: String(meta.title),
         category: String(meta.category),
         order: Number(meta.order),
+        featured: parseBooleanLike(meta.featured),
+        featuredOrder: typeof meta.featured_order === "number" ? Number(meta.featured_order) : null,
         summary: meta.summary ? String(meta.summary) : "",
         images,
         ctaLabel: meta.cta_label ? String(meta.cta_label) : "",
@@ -599,11 +684,13 @@ document.addEventListener("keydown", (event) => {
     }
 
     const projects = await loadProjects();
+    const sectionDescriptions = await loadSectionDescriptions();
+    const aboutContent = await loadAboutContent();
     if (projects.length === 0) {
       tabPanelsRoot.innerHTML = '<section class="tab-panel active"><p>No projects found. Add markdown files and update projects/index.json.</p></section>';
       return;
     }
-    renderProjects(projects);
+    renderProjects(projects, sectionDescriptions, aboutContent);
   } catch (error) {
     tabPanelsRoot.innerHTML = '<section class="tab-panel active"><p>Failed to load projects. Check paths in projects/index.json.</p></section>';
     console.error(error);
